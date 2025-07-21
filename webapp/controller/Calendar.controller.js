@@ -6,8 +6,8 @@ sap.ui.define([
     "sap/ui/core/Fragment"
 ], function (Controller, JSONModel, MessageToast, DateFormat, Fragment) {
     "use strict";
-    var that;
-    return Controller.extend("application.controller.Calendar", {
+     var that;
+     return Controller.extend("application.controller.Calendar", {
         onInit: function () {
             that = this;
             that.allFilesData = [];
@@ -48,9 +48,17 @@ sap.ui.define([
             var data = that.getView().getModel("oNewModel").getData().items;
             for (var i = 0; i < oData.length; i++) {
                 var entry = oData[i];
+                var cleanStart;
+                if (typeof entry["PERIODSTART"] === "number") {
+                    cleanStart = Math.floor(entry["PERIODSTART"]);
+                }
+                var cleanEnd;
+                if (typeof entry["PERIODEND"] === "number") {
+                    cleanEnd = Math.floor(entry["PERIODEND"]);
+                }
                 var isDuplicate = false;
                 for (var j = 0; j < data.length; j++) {
-                    if ( data[j].StartDate === entry["PERIODSTART"] && data[j].EndDate === entry["PERIODEND"]) {
+                    if (data[j].StartDate === cleanStart && data[j].EndDate === cleanEnd) {
                         isDuplicate = true;
                         break;
                     }
@@ -58,8 +66,8 @@ sap.ui.define([
                 if (!isDuplicate) {
                     newRecords.push({
                         Level: entry["LEVEL"],
-                        StartDate: entry["PERIODSTART"],
-                        EndDate: entry["PERIODEND"],
+                        StartDate: cleanStart,
+                        EndDate: cleanEnd,
                         PeriodDesc: entry["PERIODDESC"],
                         WeakWeight: entry["WEEKWEIGHT"],
                         MonthWeight: entry["MONTHWEIGHT"],
@@ -70,14 +78,15 @@ sap.ui.define([
                 var dateA = that.parseExcelDate(a.StartDate);
                 var dateB = that.parseExcelDate(b.StartDate);
                 return dateA - dateB;
+                
             });
             if (data.length > 0 && newRecords.length > 0) {
                 var lastEndDateStr = data[data.length - 1].EndDate;
                 var lastEndDate = that.parseExcelDate(lastEndDateStr);
-                var expectedStartDate = that.addDaysToDate(lastEndDate, 0);
+                var expectedStartDate = that.addDaysToDate(lastEndDate, 1);          
                 var firstNewStartDate = that.parseExcelDate(newRecords[0].StartDate);
                 if (!that.datesAreEqual(firstNewStartDate, expectedStartDate)) {
-                    MessageToast.show("Please check your Excel file. continuity  of data is missing.");
+                    MessageToast.show("Please check your Excel file. Continuity of data is missing.");
                     oFileUploader.clear();
                     that.upload.close();
                     return;
@@ -103,7 +112,7 @@ sap.ui.define([
             if (newRecords.length > 0) {
                 MessageToast.show("New records uploaded successfully.");
             } else {
-                MessageToast.show("Excel upload failed.");
+                MessageToast.show("Duplicates found Excel upload failed.");
             }
             that.upload.close();
         
@@ -111,9 +120,10 @@ sap.ui.define([
         }, 
         parseExcelDate: function (value) {
             if (typeof value === "number") {
-                return new Date((value - 25569) * 86400 * 1000);
+                var flooredValue = Math.floor(value); 
+                return new Date((flooredValue - 25569) * 86400 * 1000);
             }
-            return new Date(value); 
+            return new Date(value);
         },
         addDaysToDate: function (date, days) {
             let result = new Date(date);
@@ -124,7 +134,7 @@ sap.ui.define([
             return d1.getFullYear() === d2.getFullYear() &&
                    d1.getMonth() === d2.getMonth() &&
                    d1.getDate() === d2.getDate();
-        },
+        }, 
         formatDate: function (excelDate) {
             var jsDate = new Date((excelDate - 25569) * 86400 * 1000);
             var oFormatter = DateFormat.getDateInstance({ pattern: "yyyy-MM-dd" });
