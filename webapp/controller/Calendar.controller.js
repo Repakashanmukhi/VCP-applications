@@ -4,7 +4,7 @@ sap.ui.define([
     "sap/m/MessageToast",
     "sap/ui/core/format/DateFormat",
     "sap/ui/core/Fragment",
-     "sap/ui/model/FilterOperator"
+    "sap/ui/model/FilterOperator"
 ], function (Controller, JSONModel, MessageToast, DateFormat, Fragment, FilterOperator) {
     "use strict";
      var that;
