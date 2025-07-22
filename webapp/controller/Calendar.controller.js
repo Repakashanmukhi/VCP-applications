@@ -113,7 +113,6 @@ sap.ui.define([
                 MessageToast.show("Duplicates found Excel upload failed.");
             }
             that.upload.close();
-        
             oFileUploader.clear();
         }, 
         parseExcelDate: function (value) {
@@ -160,9 +159,9 @@ sap.ui.define([
                 oInput.setValueState("None");
             }
         },
-        close: function () {
-            that.upload.close();
-        }
+       close: function(){
+        that.upload.close();
+       }
     });
 });
 
