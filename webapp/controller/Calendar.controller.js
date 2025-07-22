@@ -48,14 +48,10 @@ sap.ui.define([
             var data = that.getView().getModel("oNewModel").getData().items;
             for (var i = 0; i < oData.length; i++) {
                 var entry = oData[i];
-                var cleanStart;
-                if (typeof entry["PERIODSTART"] === "number") {
-                    cleanStart = Math.floor(entry["PERIODSTART"]);
-                }
-                var cleanEnd;
-                if (typeof entry["PERIODEND"] === "number") {
-                    cleanEnd = Math.floor(entry["PERIODEND"]);
-                }
+                var startRaw = entry["PERIODSTART"];
+                var endRaw = entry["PERIODEND"];
+                var cleanStart = Math.floor(startRaw);
+                var cleanEnd = Math.floor(endRaw);
                 var isDuplicate = false;
                 for (var j = 0; j < data.length; j++) {
                     if (data[j].StartDate === cleanStart && data[j].EndDate === cleanEnd) {
@@ -119,11 +115,7 @@ sap.ui.define([
             oFileUploader.clear();
         }, 
         parseExcelDate: function (value) {
-            if (typeof value === "number") {
-                var flooredValue = Math.floor(value); 
-                return new Date((flooredValue - 25569) * 86400 * 1000);
-            }
-            return new Date(value);
+            return new Date((value - 25569) * 86400 * 1000);
         },
         addDaysToDate: function (date, days) {
             let result = new Date(date);
