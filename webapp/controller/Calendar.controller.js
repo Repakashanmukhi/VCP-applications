@@ -3,8 +3,9 @@ sap.ui.define([
     "sap/ui/model/json/JSONModel",
     "sap/m/MessageToast",
     "sap/ui/core/format/DateFormat",
-    "sap/ui/core/Fragment"
-], function (Controller, JSONModel, MessageToast, DateFormat, Fragment) {
+    "sap/ui/core/Fragment",
+     "sap/ui/model/FilterOperator"
+], function (Controller, JSONModel, MessageToast, DateFormat, Fragment, FilterOperator) {
     "use strict";
      var that;
      return Controller.extend("application.controller.Calendar", {
@@ -74,7 +75,6 @@ sap.ui.define([
                 var dateA = that.parseExcelDate(a.StartDate);
                 var dateB = that.parseExcelDate(b.StartDate);
                 return dateA - dateB;
-                
             });
             if (data.length > 0 && newRecords.length > 0) {
                 var lastEndDateStr = data[data.length - 1].EndDate;
@@ -91,6 +91,14 @@ sap.ui.define([
             var finalData = data.concat(newRecords);
             var oModel = new sap.ui.model.json.JSONModel({ items: finalData });
             that.getView().setModel(oModel, "oNewModel");
+            var oTabBar = that.getView().byId("iconTabBar");
+            var selectedKey = oTabBar.getSelectedKey();
+            that.onTabSelect({ 
+                getParameter: function () 
+                { 
+                    return selectedKey; 
+                } 
+            });
             var oTable = that.getView().byId("data");
             var oBinding = oTable.getBinding("items");
             var oSorter = new sap.ui.model.Sorter("Level", false);
@@ -98,12 +106,6 @@ sap.ui.define([
                 var order = ["W", "M", "Q"];
                 return order.indexOf(a) - order.indexOf(b);
             };
-            var oFilter = new sap.ui.model.Filter({
-                path: "Level",
-                operator: sap.ui.model.FilterOperator.NE,
-                value1: ""
-            });
-            oBinding.filter([oFilter]);
             oBinding.sort([oSorter]);
             if (newRecords.length > 0) {
                 MessageToast.show("New records uploaded successfully.");
@@ -132,9 +134,36 @@ sap.ui.define([
             var oFormatter = DateFormat.getDateInstance({ pattern: "yyyy-MM-dd" });
             return oFormatter.format(jsDate);
         },
+        onTabSelect: function (oEvent) {
+            var key = oEvent.getParameter("key");
+            var oTable = that.getView().byId("data");
+            var oBinding = oTable.getBinding("items");
+            var oFilter = new sap.ui.model.Filter("Level",FilterOperator.EQ, key);
+            oBinding.filter([oFilter]);  
+        },
+        onInputChange: function (oEvent) {
+            var newDesc = oEvent.getSource().getValue();  
+            var oInput = oEvent.getSource();  
+            var data = that.getView().getModel("oNewModel").getData().items;  
+            var context = oInput.getBindingContext("oNewModel");
+            var oldDesc = context.getObject().PeriodDesc;
+            var descriptionExists = false;
+            data.forEach(function(item){
+                if( item.PeriodDesc === newDesc && item.PeriodDesc !== oldDesc ){
+                    descriptionExists = true
+                }
+            })
+            if (descriptionExists) {
+                oInput.setValueState("Error");
+                oInput.setValueStateText("This description already exists.");
+            } else {
+                oInput.setValueState("None");
+            }
+        },
         close: function () {
             that.upload.close();
         }
     });
 });
+
 

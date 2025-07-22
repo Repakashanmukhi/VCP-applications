@@ -3,32 +3,48 @@
     xmlns:mvc="sap.ui.core.mvc"
     xmlns="sap.m"
     xmlns:core="sap.ui.core">
-    <Page id="page" title="{i18n>title}">
-        <Bar>
-            <contentRight>
-                <Button icon="sap-icon://upload-to-cloud" text="Upload" press="handleUpload" ariaHasPopup="Dialog" />
-            </contentRight>
-        </Bar>
-
-        <Table id="data" items="{oNewModel>/items}" growing="true" growingScrollToLoad="true">
-            <columns>
-                <Column><Text text="Level" /></Column>
-                <Column><Text text="Period Start Date" /></Column>
-                <Column><Text text="Period End Date" /></Column>
-                <Column><Text text="Week Weight" /></Column>
-                <Column><Text text="Month Weight" /></Column>
-            </columns>
+    <Page id="page">
+        <customHeader>
+            <Bar>
+                <contentLeft>
+                    <Title text="{i18n>title}" />
+                </contentLeft>
+                <contentRight>
+                    <Button icon="sap-icon://upload-to-cloud" text="Upload" press="handleUpload" ariaHasPopup="Dialog" />
+                </contentRight>
+            </Bar>
+        </customHeader>
+        <IconTabBar id="iconTabBar" select="onTabSelect">
             <items>
-                <ColumnListItem>
-                    <cells>
-                        <Text text="{oNewModel>Level}" />
-                        <Text text="{path: 'oNewModel>StartDate', formatter: '.formatDate'}" />
-                        <Text text="{path: 'oNewModel>EndDate', formatter: '.formatDate'}" />
-                        <Text text="{oNewModel>WeakWeight}" />
-                        <Text text="{oNewModel>MonthWeight}" />
-                    </cells>
-                </ColumnListItem>
+                <IconTabFilter text="Weekly" key="W" />
+                <IconTabFilter text="Monthly" key="M" />
+                <IconTabFilter text="Quarterly" key="Q" />
             </items>
-        </Table>
+            <content>
+                <Table id="data" items="{oNewModel>/items}" growing="true" growingScrollToLoad="true">
+                    <columns>
+                        <Column><Text text="Level" /></Column>
+                        <Column><Text text="Period Start Date" /></Column>
+                        <Column><Text text="Period End Date" /></Column>
+                        <Column><Text text="Period Description" /></Column>
+                        <Column><Text text="Week Weight" /></Column>
+                        <Column><Text text="Month Weight" /></Column>
+                    </columns>
+                    <items>
+                        <ColumnListItem>
+                            <cells>
+                                <Text text="{oNewModel>Level}" />
+                                <Text text="{path: 'oNewModel>StartDate', formatter: '.formatDate'}" />
+                                <Text text="{path: 'oNewModel>EndDate', formatter: '.formatDate'}" />
+                                <!-- <Text text="{oNewModel>PeriodDesc}" /> -->
+                                <Input value="{oNewModel>PeriodDesc}" liveChange="onInputChange" />
+                                <Text text="{oNewModel>WeakWeight}" />
+                                <Text text="{oNewModel>MonthWeight}" />
+                            </cells>
+                        </ColumnListItem>
+                    </items>
+                </Table>
+            </content>
+        </IconTabBar>
     </Page>
 </mvc:View>
