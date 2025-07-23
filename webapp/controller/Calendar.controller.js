@@ -29,7 +29,6 @@ sap.ui.define([
         },
         onFileChange: function (oEvent) {
             var file = oEvent.getParameter("files")[0];
-            if (!file) return;
             that.allFilesData = [];
             var reader = new FileReader();
             reader.onload = function (e) {
