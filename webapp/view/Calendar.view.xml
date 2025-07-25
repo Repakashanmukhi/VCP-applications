@@ -3,48 +3,48 @@
     xmlns:mvc="sap.ui.core.mvc"
     xmlns="sap.m"
     xmlns:core="sap.ui.core">
-    <Page id="page">
+    <Page id="page" title="Calendar Upload">
         <customHeader>
             <Bar>
                 <contentLeft>
-                    <Title text="{i18n>title}" />
+                    <Title text="Period Calendar Upload" />
                 </contentLeft>
                 <contentRight>
-                    <Button icon="sap-icon://upload-to-cloud" text="Upload" press="handleUpload" ariaHasPopup="Dialog" />
+                    <Button icon="sap-icon://upload-to-cloud" text="Upload" press="handleUpload" />
                 </contentRight>
             </Bar>
         </customHeader>
-        <IconTabBar id="iconTabBar" select="onTabSelect">
-            <items>
-                <IconTabFilter text="Weekly" key="W" />
-                <IconTabFilter text="Monthly" key="M" />
-                <IconTabFilter text="Quarterly" key="Q" />
-            </items>
+            <IconTabBar id="iconTabBar" select="onTabSelect">
+                <items>
+                    <IconTabFilter key="W" text="Weekly"/>
+                    <IconTabFilter key="M" text="Monthly"/>
+                    <IconTabFilter key="Q" text="Quarterly"/>
+                </items>
+            </IconTabBar>
             <content>
-                <Table id="data" items="{oNewModel>/items}" growing="true" growingScrollToLoad="true">
-                    <columns>
-                        <Column><Text text="Level" /></Column>
-                        <Column><Text text="Period Start Date" /></Column>
-                        <Column><Text text="Period End Date" /></Column>
-                        <Column><Text text="Period Description" /></Column>
-                        <Column><Text text="Week Weight" /></Column>
-                        <Column><Text text="Month Weight" /></Column>
-                    </columns>
-                    <items>
-                        <ColumnListItem>
-                            <cells>
-                                <Text text="{oNewModel>Level}" />
-                                <Text text="{path: 'oNewModel>StartDate', formatter: '.formatDate'}" />
-                                <Text text="{path: 'oNewModel>EndDate', formatter: '.formatDate'}" />
-                                <!-- <Text text="{oNewModel>PeriodDesc}" /> -->
-                                <Input value="{oNewModel>PeriodDesc}" liveChange="onInputChange" />
-                                <Text text="{oNewModel>WeakWeight}" />
-                                <Text text="{oNewModel>MonthWeight}" />
-                            </cells>
-                        </ColumnListItem>
-                    </items>
-                </Table>
+            <Table id="calendarTable" items="{activeModel>/items}" growing="true" growingScrollToLoad="true">
+                <columns>
+                    <Column><Text text="Level" /></Column>
+                    <Column><Text text="Start Date" /></Column>
+                    <Column><Text text="End Date" /></Column>
+                    <Column><Text text="Description" /></Column>
+                    <Column><Text text="Week Weight" /></Column>
+                    <Column><Text text="Month Weight" /></Column>
+                </columns>
+                <items>
+                    <ColumnListItem>
+                        <cells>
+                            <Text text="{activeModel>Level}" />
+                            <Text text="{path: 'activeModel>StartDate', formatter: '.formatDate'}" />
+                            <Text text="{path: 'activeModel>EndDate', formatter: '.formatDate'}" />
+                            <Input value="{activeModel>PeriodDesc}" liveChange="onInputChange" id= "DescId"/>
+
+                            <Text text="{activeModel>WeakWeight}" />
+                            <Text text="{activeModel>MonthWeight}" />
+                        </cells>
+                    </ColumnListItem>
+                </items>
+            </Table>
             </content>
-        </IconTabBar>
     </Page>
 </mvc:View>
