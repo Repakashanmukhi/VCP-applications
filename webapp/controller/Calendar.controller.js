@@ -63,12 +63,13 @@ sap.ui.define([
                 var endDate = that.parseExcelDate(entry["PERIODEND"]);
                 var adjustedStart, adjustedEnd;
                 if (level === "W") {
-                    var adjusted = that.adjustToCustomFiscalWeek(startDate);
-                    adjustedStart = adjusted.startOfWeek.getTime();
-                    adjustedEnd = adjusted.endOfWeek.getTime();
-                } else {
-                    adjustedStart = that.adjustToNextMondayOrSame(startDate).getTime();
-                    adjustedEnd = that.adjustToNextSundayOrSame(endDate).getTime();
+                    adjustedStart = that.adjustToNextMonday(startDate).getTime();
+                    adjustedEnd = that.adjustToNextSunday(endDate).getTime();
+                }
+                
+                 else {
+                    adjustedStart = that.adjustToNextMonday(startDate).getTime();
+                    adjustedEnd = that.adjustToNextSunday(endDate).getTime();
                 }
                 var isDuplicate = combinedData.some(function (item) {
                     return item.StartDate === adjustedStart && item.EndDate === adjustedEnd;
@@ -92,7 +93,7 @@ sap.ui.define([
                 var expectedStartDate = that.addDaysToDate(lastEndDate, 1);
                 var firstNewStartDate = new Date(newRecords[0].StartDate);
                 if (!that.datesAreEqual(firstNewStartDate, expectedStartDate)) {
-                    MessageToast.show("Continuity error: New data must start immediately after last existing period ends (Monday to Sunday week).");
+                    MessageToast.show("Continuity error: Excel upload failed, upload correct file");
                     oFileUploader.clear();
                     that.upload.close();
                     return;
@@ -117,95 +118,44 @@ sap.ui.define([
                 };
                 oBinding.sort([oSorter]);
             }
-        
             if (newRecords.length > 0) {
                 MessageToast.show("New records uploaded successfully.");
             } else {
                 MessageToast.show("Duplicates found. Excel upload skipped.");
             }
-        
             that.upload.close();
             oFileUploader.clear();
         },
-        adjustToNextMondayOrSame: function(date) {
-            var day = date.getDay();
-            if (day === 1) return new Date(date); 
-            var diff = (8 - day) % 7;
-            var adjusted = new Date(date);
-            adjusted.setDate(adjusted.getDate() + diff);
-            return adjusted;
+        adjustToNextMonday: function(date) {
+            var result = new Date(date);
+            var day = result.getDay();
+            var daysToAdd = (day === 1) ? 0 : (8 - day) % 7;
+            result.setDate(result.getDate() + daysToAdd);
+            return result;
         },
-        adjustToNextSundayOrSame: function(date) {
-            var day = date.getDay();
-            if (day === 0) return new Date(date); 
-            var diff = 7 - day;
-            var adjusted = new Date(date);
-            adjusted.setDate(adjusted.getDate() + diff);
-            return adjusted;
+        adjustToNextSunday: function(date) {
+            var result = new Date(date);
+            var day = result.getDay();
+            var daysToAdd = (day === 0) ? 0 : (7 - day) % 7;
+            result.setDate(result.getDate() + daysToAdd);
+            return result;
         },
-        adjustToCustomFiscalWeek: function (date) {
-            var fiscalStart = new Date("2024-02-26");
-            var msInDay = 1000 * 60 * 60 * 24;
-            var daysSinceStart = Math.floor((date - fiscalStart) / msInDay);
-            var weekOffset = Math.floor(daysSinceStart / 7);
-            var startOfWeek = new Date(fiscalStart);
-            startOfWeek.setDate(fiscalStart.getDate() + weekOffset * 7);
-            var endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(startOfWeek.getDate() + 6);
-            return {
-                startOfWeek,
-                endOfWeek
-            };
-        },
-        adjustToWeekStartEnd: function (date) {
-            var dayOfWeek = date.getDay(); 
-            var diffToMonday;
-            if (dayOfWeek === 0) {
-                diffToMonday = -6; 
-            } else {
-                diffToMonday = 1 - dayOfWeek;
-            }
-            var startOfWeek = new Date(date);
-            startOfWeek.setDate(startOfWeek.getDate() + diffToMonday);
-            var endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(startOfWeek.getDate() + 6);
-            return {
-                 startOfWeek,
-                 endOfWeek
-            };
-        }, 
         generatePeriodDesc: function (level, endOfWeekDate) {
             var year = endOfWeekDate.getFullYear();
-            var month = endOfWeekDate.getMonth(); 
-            var fiscalYear;
-            if (month >= 2) { 
-                fiscalYear = year + 1;
-            } else {
-                fiscalYear = year;
-            }
+            var month = endOfWeekDate.getMonth();
+            var fiscalYear = (month >= 2) ? year + 1 : year;
             if (level === "W") {
                 var oFormatter = DateFormat.getDateInstance({ pattern: "yyyy/MM/dd" });
                 return "CW " + oFormatter.format(endOfWeekDate);
             }
             var yearShort = fiscalYear.toString().slice(-2);
+            var fiscalMonth = (month >= 2) ? month - 1 : month + 11;
             if (level === "M") {
-                var fiscalMonth;
-                if (month >= 2) {
-                    fiscalMonth = month - 1;
-                } else {
-                    fiscalMonth = month + 11;
-                }
-                var monthStr = fiscalMonth.toString().padStart(2, "0");
-                return "FY" + yearShort + " P" + monthStr;
+                return "FY" + yearShort + " P" + fiscalMonth.toString().padStart(2, "0");
             } else if (level === "Q") {
-                var fiscalMonth;
-                if (month >= 2) {
-                    fiscalMonth = month - 1;
-                } else {
-                    fiscalMonth = month + 11;
-                }
-                var fiscalQuarter = Math.floor((fiscalMonth - 1) / 3) + 1;
-                return "FY" + yearShort + " Q" + fiscalQuarter;
+                return "FY" + yearShort + " Q" + (Math.floor((fiscalMonth - 1) / 3) + 1);
+            } else {
+                return "";
             }
         },
         switchActiveModel: function (key) {
@@ -219,23 +169,6 @@ sap.ui.define([
             }
             var selectedModel = that.getView().getModel(modelName);
             that.getView().setModel(selectedModel, "activeModel");
-        },
-        adjustToWeekStartEnd: function (date) {
-            var dayOfWeek = date.getDay(); 
-            var diffToMonday;
-            if (dayOfWeek === 0) {
-                diffToMonday = -6; 
-            } else {
-                diffToMonday = 1 - dayOfWeek;
-            }
-            var startOfWeek = new Date(date);
-            startOfWeek.setDate(startOfWeek.getDate() + diffToMonday);
-            var endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(startOfWeek.getDate() + 6);
-            return {
-                 startOfWeek,
-                 endOfWeek
-            };
         },
         parseExcelDate: function (value) {
             return new Date((value - 25569) * 86400 * 1000);
@@ -252,9 +185,6 @@ sap.ui.define([
         },
         formatDate: function (timestamp) {
             var jsDate = new Date(timestamp);
-            if (isNaN(jsDate.getTime())) {
-                return "";
-            }
             var oFormatter = DateFormat.getDateInstance({ pattern: "yyyy-MM-dd" });
             return oFormatter.format(jsDate);
         },
@@ -335,6 +265,6 @@ sap.ui.define([
             var oFileUploader = sap.ui.getCore().byId("myFileUploader");
             that.upload.close();
             oFileUploader.clear();
-        }
+        },
     });
-});
+}); 
