@@ -32,7 +32,6 @@ sap.ui.define([
         onFileChange: function (oEvent) {
             var file = oEvent.getParameter("files")[0];
             if (!file) return;
-            that.allFilesData = [];
             var reader = new FileReader();
             reader.onload = function (e) {
                 var data = e.target.result;
@@ -61,16 +60,8 @@ sap.ui.define([
                 var level = entry["LEVEL"];
                 var startDate = that.parseExcelDate(entry["PERIODSTART"]);
                 var endDate = that.parseExcelDate(entry["PERIODEND"]);
-                var adjustedStart, adjustedEnd;
-                if (level === "W") {
-                    adjustedStart = that.adjustToNextMonday(startDate).getTime();
-                    adjustedEnd = that.adjustToNextSunday(endDate).getTime();
-                }
-                
-                 else {
-                    adjustedStart = that.adjustToNextMonday(startDate).getTime();
-                    adjustedEnd = that.adjustToNextSunday(endDate).getTime();
-                }
+                var adjustedStart = that.adjustToNextMonday(startDate).getTime();
+                var adjustedEnd = that.adjustToNextSunday(endDate).getTime();
                 var isDuplicate = combinedData.some(function (item) {
                     return item.StartDate === adjustedStart && item.EndDate === adjustedEnd;
                 });
@@ -140,24 +131,6 @@ sap.ui.define([
             result.setDate(result.getDate() + daysToAdd);
             return result;
         },
-        generatePeriodDesc: function (level, endOfWeekDate) {
-            var year = endOfWeekDate.getFullYear();
-            var month = endOfWeekDate.getMonth();
-            var fiscalYear = (month >= 2) ? year + 1 : year;
-            if (level === "W") {
-                var oFormatter = DateFormat.getDateInstance({ pattern: "yyyy/MM/dd" });
-                return "CW " + oFormatter.format(endOfWeekDate);
-            }
-            var yearShort = fiscalYear.toString().slice(-2);
-            var fiscalMonth = (month >= 2) ? month - 1 : month + 11;
-            if (level === "M") {
-                return "FY" + yearShort + " P" + fiscalMonth.toString().padStart(2, "0");
-            } else if (level === "Q") {
-                return "FY" + yearShort + " Q" + (Math.floor((fiscalMonth - 1) / 3) + 1);
-            } else {
-                return "";
-            }
-        },
         switchActiveModel: function (key) {
             var modelName = "";
             if (key === "W") {
@@ -188,6 +161,24 @@ sap.ui.define([
             var oFormatter = DateFormat.getDateInstance({ pattern: "yyyy-MM-dd" });
             return oFormatter.format(jsDate);
         },
+        generatePeriodDesc: function (level, endOfWeekDate) {
+            var year = endOfWeekDate.getFullYear();
+            var month = endOfWeekDate.getMonth();
+            var fiscalYear = (month >= 2) ? year + 1 : year;
+            if (level === "W") {
+                var oFormatter = DateFormat.getDateInstance({ pattern: "yyyy/MM/dd" });
+                return "CW " + oFormatter.format(endOfWeekDate);
+            }
+            var yearShort = fiscalYear.toString().slice(-2);
+            var fiscalMonth = (month >= 2) ? month - 1 : month + 11;
+            if (level === "M") {
+                return "FY" + yearShort + " P" + fiscalMonth.toString().padStart(2, "0");
+            } else if (level === "Q") {
+                return "FY" + yearShort + " Q" + (Math.floor((fiscalMonth - 1) / 3) + 1);
+            } else {
+                return "";
+            }
+        }, 
         onTabSelect: function (oEvent) {
             var key = oEvent.getParameter("key");
             if (that.unsavedChanges) {
