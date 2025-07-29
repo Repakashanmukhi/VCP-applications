@@ -6,7 +6,7 @@ sap.ui.define([
     "sap/ui/core/Fragment",
     "sap/ui/model/FilterOperator",
     "sap/m/MessageBox"
-], function (Controller, JSONModel, MessageToast, DateFormat, Fragment, FilterOperator,MessageBox) {
+], function (Controller, JSONModel, MessageToast, DateFormat, Fragment, FilterOperator, MessageBox) {
     "use strict";
     var that;
     return Controller.extend("application.controller.Calendar", {
@@ -79,6 +79,31 @@ sap.ui.define([
             newRecords.sort(function (a, b) {
                 return a.StartDate - b.StartDate;
             });
+            var levels = ["W", "M", "Q"];
+            for (var l = 0; l < levels.length; l++) {
+                var level = levels[l];
+                var levelRecords = [];
+                for (var i = 0; i < newRecords.length; i++) {
+                    if (newRecords[i].Level === level) {
+                        levelRecords.push(newRecords[i]);
+                    }
+                }
+                levelRecords.sort(function (a, b) {
+                    return a.StartDate - b.StartDate;
+                });
+                for (var j = 1; j < levelRecords.length; j++) {
+                    var prevEnd = new Date(levelRecords[j - 1].EndDate);
+                    var expectedNextStart = that.addDaysToDate(prevEnd, 1);
+                    var actualStart = new Date(levelRecords[j].StartDate);
+                    if (!that.datesAreEqual(expectedNextStart, actualStart)) {
+                        MessageToast.show("Continuity error in " + level + " records. Please fix the upload file.");
+                        var oFileUploader = sap.ui.getCore().byId("myFileUploader");
+                        oFileUploader.clear();
+                        that.upload.close();
+                        return;
+                    }
+                }
+            }
             if (combinedData.length > 0 && newRecords.length > 0) {
                 var lastEndDate = new Date(combinedData[combinedData.length - 1].EndDate);
                 var expectedStartDate = that.addDaysToDate(lastEndDate, 1);
@@ -117,14 +142,14 @@ sap.ui.define([
             that.upload.close();
             oFileUploader.clear();
         },
-        adjustToNextMonday: function(date) {
+        adjustToNextMonday: function (date) {
             var result = new Date(date);
             var day = result.getDay();
             var daysToAdd = (day === 1) ? 0 : (8 - day) % 7;
             result.setDate(result.getDate() + daysToAdd);
             return result;
         },
-        adjustToNextSunday: function(date) {
+        adjustToNextSunday: function (date) {
             var result = new Date(date);
             var day = result.getDay();
             var daysToAdd = (day === 0) ? 0 : (7 - day) % 7;
@@ -134,7 +159,7 @@ sap.ui.define([
         switchActiveModel: function (key) {
             var modelName = "";
             if (key === "W") {
-                modelName = "weeklyModel";  
+                modelName = "weeklyModel";
             } else if (key === "M") {
                 modelName = "monthlyModel";
             } else if (key === "Q") {
@@ -153,8 +178,8 @@ sap.ui.define([
         },
         datesAreEqual: function (d1, d2) {
             return d1.getFullYear() === d2.getFullYear() &&
-                   d1.getMonth() === d2.getMonth() &&
-                   d1.getDate() === d2.getDate();
+                d1.getMonth() === d2.getMonth() &&
+                d1.getDate() === d2.getDate();
         },
         formatDate: function (timestamp) {
             var jsDate = new Date(timestamp);
@@ -178,7 +203,7 @@ sap.ui.define([
             } else {
                 return "";
             }
-        }, 
+        },
         onTabSelect: function (oEvent) {
             var key = oEvent.getParameter("key");
             if (that.unsavedChanges) {
@@ -186,12 +211,12 @@ sap.ui.define([
                     actions: [sap.m.MessageBox.Action.YES, sap.m.MessageBox.Action.NO],
                     onClose: function (action) {
                         if (action === sap.m.MessageBox.Action.YES) {
-                            that.unsavedChanges = false; 
+                            that.unsavedChanges = false;
                             that.switchActiveModel(key);
                         } else {
                             var iconTabBar = that.getView().byId("iconTabBar");
                             var currentKey = iconTabBar.getSelectedKey();
-                            iconTabBar.setSelectedKey(currentKey); 
+                            iconTabBar.setSelectedKey(currentKey);
                         }
                     }
                 });
@@ -207,16 +232,16 @@ sap.ui.define([
                     onClose: function (action) {
                         if (action === sap.m.MessageBox.Action.YES) {
                             that.unsavedChanges = false;
-                            that.switchActiveModel(key); 
+                            that.switchActiveModel(key);
                         } else {
                             var iconTabBar = that.byId("iconTabBar");
                             var currentKey = iconTabBar.getSelectedKey();
-                            iconTabBar.setSelectedKey(currentKey); 
+                            iconTabBar.setSelectedKey(currentKey);
                         }
                     }
                 });
             } else {
-                that.switchActiveModel(key); 
+                that.switchActiveModel(key);
             }
         },
         onInputChange: function (oEvent) {
