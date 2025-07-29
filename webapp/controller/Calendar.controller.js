@@ -96,7 +96,8 @@ sap.ui.define([
                     var expectedNextStart = that.addDaysToDate(prevEnd, 1);
                     var actualStart = new Date(levelRecords[j].StartDate);
                     if (!that.datesAreEqual(expectedNextStart, actualStart)) {
-                        MessageToast.show("Continuity error in " + level + " records. Please fix the upload file.");
+                        MessageToast.show("Continuity error Please fix the upload file.");
+                        that.allFilesData = [];
                         var oFileUploader = sap.ui.getCore().byId("myFileUploader");
                         oFileUploader.clear();
                         that.upload.close();
@@ -110,6 +111,7 @@ sap.ui.define([
                 var firstNewStartDate = new Date(newRecords[0].StartDate);
                 if (!that.datesAreEqual(firstNewStartDate, expectedStartDate)) {
                     MessageToast.show("Continuity error: Excel upload failed, upload correct file");
+                    that.allFilesData = [];
                     oFileUploader.clear();
                     that.upload.close();
                     return;
