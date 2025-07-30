@@ -205,26 +205,6 @@ sap.ui.define([
                 that.switchActiveModel(key);
             }
         },
-        onTabSelect: function (oEvent) {
-            var key = oEvent.getParameter("key");
-            if (that.unsavedChanges) {
-                sap.m.MessageBox.warning("There are unsaved changes. Do you want to continue?", {
-                    actions: [sap.m.MessageBox.Action.YES, sap.m.MessageBox.Action.NO],
-                    onClose: function (action) {
-                        if (action === sap.m.MessageBox.Action.YES) {
-                            that.unsavedChanges = false;
-                            that.switchActiveModel(key);
-                        } else {
-                            var iconTabBar = that.byId("iconTabBar");
-                            var currentKey = iconTabBar.getSelectedKey();
-                            iconTabBar.setSelectedKey(currentKey);
-                        }
-                    }
-                });
-            } else {
-                that.switchActiveModel(key);
-            }
-        },
         onInputChange: function (oEvent) {
             var newDesc = oEvent.getSource().getValue();
             var oInput = oEvent.getSource();
