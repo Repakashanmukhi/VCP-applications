@@ -31,7 +31,6 @@ sap.ui.define([
         },
         onFileChange: function (oEvent) {
             var file = oEvent.getParameter("files")[0];
-            if (!file) return;
             var reader = new FileReader();
             reader.onload = function (e) {
                 var data = e.target.result;
@@ -46,48 +45,50 @@ sap.ui.define([
         ExcelUpload: function () {
             var oData = that.allFilesData;
             var oFileUploader = sap.ui.getCore().byId("myFileUploader");
-            var newRecords = [];
-            var combinedData = [].concat(
+            var existingData = [].concat(
                 that.getView().getModel("weeklyModel").getData().items,
                 that.getView().getModel("monthlyModel").getData().items,
                 that.getView().getModel("quarterlyModel").getData().items
             );
-            combinedData.sort(function (a, b) {
+            existingData.sort(function (a, b) {
                 return a.StartDate - b.StartDate;
             });
+            var validRecords = [];
             for (var i = 0; i < oData.length; i++) {
                 var entry = oData[i];
                 var level = entry["LEVEL"];
-                var startDate = that.parseExcelDate(entry["PERIODSTART"]);
-                var endDate = that.parseExcelDate(entry["PERIODEND"]);
+                var startDate = that.convertExcelDate(entry["PERIODSTART"]);
+                var endDate = that.convertExcelDate(entry["PERIODEND"]);
                 var adjustedStart = that.adjustToNextMonday(startDate).getTime();
                 var adjustedEnd = that.adjustToNextSunday(endDate).getTime();
-                var isDuplicate = combinedData.some(function (item) {
+                var isDuplicate = existingData.some(function (item) {
                     return item.StartDate === adjustedStart && item.EndDate === adjustedEnd;
                 });
-                if (!isDuplicate) {
-                    newRecords.push({
-                        Level: level,
-                        StartDate: adjustedStart,
-                        EndDate: adjustedEnd,
-                        PeriodDesc: that.generatePeriodDesc(level, new Date(adjustedEnd)),
-                        WeakWeight: entry["WEEKWEIGHT"],
-                        MonthWeight: entry["MONTHWEIGHT"]
-                    });
+                if (isDuplicate) {
+                    continue; 
                 }
+                validRecords.push({
+                    Level: level,
+                    StartDate: adjustedStart,
+                    EndDate: adjustedEnd,
+                    PeriodDesc: that.createPeriodDescription(level, new Date(adjustedEnd)),
+                    WeakWeight: entry["WEEKWEIGHT"],
+                    MonthWeight: entry["MONTHWEIGHT"]
+                });
             }
-            newRecords.sort(function (a, b) {
+            validRecords.sort(function (a, b) {
+                return a.StartDate - b.StartDate;
+            });
+            var combinedData = existingData.concat(validRecords);
+            combinedData.sort(function (a, b) {
                 return a.StartDate - b.StartDate;
             });
             var levels = ["W", "M", "Q"];
             for (var l = 0; l < levels.length; l++) {
                 var level = levels[l];
-                var levelRecords = [];
-                for (var i = 0; i < newRecords.length; i++) {
-                    if (newRecords[i].Level === level) {
-                        levelRecords.push(newRecords[i]);
-                    }
-                }
+                var levelRecords = combinedData.filter(function (item) {
+                    return item.Level === level;
+                });
                 levelRecords.sort(function (a, b) {
                     return a.StartDate - b.StartDate;
                 });
@@ -96,47 +97,23 @@ sap.ui.define([
                     var expectedNextStart = that.addDaysToDate(prevEnd, 1);
                     var actualStart = new Date(levelRecords[j].StartDate);
                     if (!that.datesAreEqual(expectedNextStart, actualStart)) {
-                        MessageToast.show("Continuity error Please fix the upload file.");
+                        MessageToast.show("Continuity error. Please fix the upload file.");
                         that.allFilesData = [];
-                        var oFileUploader = sap.ui.getCore().byId("myFileUploader");
                         oFileUploader.clear();
                         that.upload.close();
-                        return;
+                        return; 
                     }
                 }
             }
-            if (combinedData.length > 0 && newRecords.length > 0) {
-                var lastEndDate = new Date(combinedData[combinedData.length - 1].EndDate);
-                var expectedStartDate = that.addDaysToDate(lastEndDate, 1);
-                var firstNewStartDate = new Date(newRecords[0].StartDate);
-                if (!that.datesAreEqual(firstNewStartDate, expectedStartDate)) {
-                    MessageToast.show("Continuity error: Excel upload failed, upload correct file");
-                    that.allFilesData = [];
-                    oFileUploader.clear();
-                    that.upload.close();
-                    return;
-                }
-            }
-            var allData = combinedData.concat(newRecords);
-            var weeklyData = allData.filter(item => item.Level === "W");
-            var monthlyData = allData.filter(item => item.Level === "M");
-            var quarterlyData = allData.filter(item => item.Level === "Q");
+            var weeklyData = combinedData.filter(item => item.Level === "W");
+            var monthlyData = combinedData.filter(item => item.Level === "M");
+            var quarterlyData = combinedData.filter(item => item.Level === "Q");
             that.getView().setModel(new JSONModel({ items: weeklyData }), "weeklyModel");
             that.getView().setModel(new JSONModel({ items: monthlyData }), "monthlyModel");
             that.getView().setModel(new JSONModel({ items: quarterlyData }), "quarterlyModel");
             var selectedKey = that.getView().byId("iconTabBar").getSelectedKey();
             that.switchActiveModel(selectedKey);
-            var oTable = that.getView().byId("calendarTable");
-            var oBinding = oTable.getBinding("items");
-            if (oBinding) {
-                var oSorter = new sap.ui.model.Sorter("Level", false);
-                oSorter.fnCompare = function (a, b) {
-                    var order = ["W", "M", "Q"];
-                    return order.indexOf(a) - order.indexOf(b);
-                };
-                oBinding.sort([oSorter]);
-            }
-            if (newRecords.length > 0) {
+            if (validRecords.length > 0) {
                 MessageToast.show("New records uploaded successfully.");
             } else {
                 MessageToast.show("Duplicates found. Excel upload skipped.");
@@ -147,14 +124,14 @@ sap.ui.define([
         adjustToNextMonday: function (date) {
             var result = new Date(date);
             var day = result.getDay();
-            var daysToAdd = (day === 1) ? 0 : (8 - day) % 7;
+            var daysToAdd = (day === 1) ? 0 : (8 - day);
             result.setDate(result.getDate() + daysToAdd);
             return result;
         },
         adjustToNextSunday: function (date) {
             var result = new Date(date);
             var day = result.getDay();
-            var daysToAdd = (day === 0) ? 0 : (7 - day) % 7;
+            var daysToAdd = (day === 0) ? 0 : (7 - day);
             result.setDate(result.getDate() + daysToAdd);
             return result;
         },
@@ -170,8 +147,10 @@ sap.ui.define([
             var selectedModel = that.getView().getModel(modelName);
             that.getView().setModel(selectedModel, "activeModel");
         },
-        parseExcelDate: function (value) {
-            return new Date((value - 25569) * 86400 * 1000);
+        convertExcelDate: function (value) {
+            var jsDate = new Date((value - 25569) * 86400 * 1000); 
+            jsDate.setUTCHours(0, 0, 0, 0); 
+            return jsDate;
         },
         addDaysToDate: function (date, days) {
             var result = new Date(date);
@@ -188,7 +167,7 @@ sap.ui.define([
             var oFormatter = DateFormat.getDateInstance({ pattern: "yyyy-MM-dd" });
             return oFormatter.format(jsDate);
         },
-        generatePeriodDesc: function (level, endOfWeekDate) {
+        createPeriodDescription : function (level, endOfWeekDate) {
             var year = endOfWeekDate.getFullYear();
             var month = endOfWeekDate.getMonth();
             var fiscalYear = (month >= 2) ? year + 1 : year;

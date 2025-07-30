@@ -14,14 +14,13 @@
                 </contentRight>
             </Bar>
         </customHeader>
-            <IconTabBar id="iconTabBar" select="onTabSelect">
-                <items>
-                    <IconTabFilter key="W" text="Weekly"/>
-                    <IconTabFilter key="M" text="Monthly"/>
-                    <IconTabFilter key="Q" text="Quarterly"/>
-                </items>
-            </IconTabBar>
-            <content>
+        <IconTabBar id="iconTabBar" select="onTabSelect" class="fixedTabBar">
+            <items>
+                <IconTabFilter key="W" text="Weekly"/>
+                <IconTabFilter key="M" text="Monthly"/>
+                 <IconTabFilter key="Q" text="Quarterly"/>
+            </items>
+        </IconTabBar>
             <Table id="calendarTable" items="{activeModel>/items}" growing="true" growingScrollToLoad="true">
                 <columns>
                     <Column><Text text="Level" /></Column>
@@ -38,13 +37,11 @@
                             <Text text="{path: 'activeModel>StartDate', formatter: '.formatDate'}" />
                             <Text text="{path: 'activeModel>EndDate', formatter: '.formatDate'}" />
                             <Input value="{activeModel>PeriodDesc}" valueState="{activeModel>None}" liveChange="onInputChange" id= "DescId"/>
-
                             <Text text="{activeModel>WeakWeight}" />
                             <Text text="{activeModel>MonthWeight}" />
                         </cells>
                     </ColumnListItem>
                 </items>
             </Table>
-            </content>
     </Page>
 </mvc:View>
